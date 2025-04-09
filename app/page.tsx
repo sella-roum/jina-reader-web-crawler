@@ -7,9 +7,20 @@ import { CrawlingProgress } from "@/components/crawling-progress";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
-import { Database } from "lucide-react";
+import { Database, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Home() {
   const {
@@ -32,6 +43,9 @@ export default function Home() {
     downloadCrawledData,
     toggleUrlSelection,
     toggleAllUrls,
+    resetCrawlingData,
+    maxConcurrentRequests,
+    setMaxConcurrentRequests,
   } = useCrawler();
 
   // 最初のページが取得済みかどうか
@@ -56,13 +70,45 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="flex justify-end mb-4">
+          <div className="flex flex-wrap justify-between gap-2 mb-4">
             <Link href="/results">
               <Button variant="outline" className="gap-1">
                 <Database className="h-4 w-4" />
                 クローリング結果一覧
               </Button>
             </Link>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="gap-1 text-red-500 hover:text-red-700"
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  クローリング情報をリセット
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    クローリング情報をリセットしますか？
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    この操作により、現在のクローリング進行状況がすべてリセットされます。
+                    クローリング結果はIndexedDBに保存されているため削除されません。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={resetCrawlingData}
+                    className="bg-red-500 hover:bg-red-700"
+                  >
+                    リセットする
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <motion.div
@@ -113,18 +159,20 @@ export default function Home() {
                 downloadCrawledData={downloadCrawledData}
                 retryFailedUrls={retryFailedUrls}
                 stats={stats}
+                maxConcurrentRequests={maxConcurrentRequests}
+                setMaxConcurrentRequests={setMaxConcurrentRequests}
               />
             </motion.div>
           )}
 
-          {/* <motion.div
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
             className="text-center text-gray-500 text-sm mt-8"
           >
             <p>© {new Date().getFullYear()} Jina AI Reader Webクローラー</p>
-          </motion.div> */}
+          </motion.div>
         </div>
       </main>
       <Toaster />

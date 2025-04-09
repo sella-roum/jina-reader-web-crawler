@@ -9,10 +9,22 @@ import {
   isValidHttpUrl,
 } from "@/utils/url-utils";
 import { useToast } from "@/hooks/use-toast";
-import { saveCrawledPages } from "@/lib/indexed-db";
+import {
+  saveCrawledPages,
+  saveSetting,
+  getSetting,
+  SETTINGS_KEYS,
+} from "@/lib/indexed-db";
 
-// 並列処理の最大数
-const MAX_CONCURRENT_REQUESTS = 1;
+// ローカルストレージのキー
+const STORAGE_KEYS = {
+  INITIAL_URL: "crawler_initial_url",
+  CRAWLED_DATA: "crawler_crawled_data",
+  EXTRACTED_URLS: "crawler_extracted_urls",
+  IS_CRAWLING: "crawler_is_crawling",
+  IS_RETRYING: "crawler_is_retrying",
+  PROGRESS: "crawler_progress",
+};
 
 export function useCrawler() {
   const [initialUrl, setInitialUrl] = useState<string>("");
@@ -27,7 +39,118 @@ export function useCrawler() {
   );
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [maxConcurrentRequests, setMaxConcurrentRequests] = useState<number>(1);
   const { toast } = useToast();
+
+  // IndexedDBから設定を読み込む
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // 並列処理の最大数を読み込む
+        const savedMaxConcurrentRequests = await getSetting<number>(
+          SETTINGS_KEYS.MAX_CONCURRENT_REQUESTS,
+          1
+        );
+        setMaxConcurrentRequests(savedMaxConcurrentRequests);
+      } catch (error) {
+        console.error("設定の読み込みエラー:", error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  // 並列処理の最大数が変更されたらIndexedDBに保存
+  useEffect(() => {
+    const saveMaxConcurrentRequests = async () => {
+      try {
+        await saveSetting(
+          SETTINGS_KEYS.MAX_CONCURRENT_REQUESTS,
+          maxConcurrentRequests
+        );
+      } catch (error) {
+        console.error("設定の保存エラー:", error);
+      }
+    };
+
+    saveMaxConcurrentRequests();
+  }, [maxConcurrentRequests]);
+
+  // ローカルストレージからデータを読み込む
+  useEffect(() => {
+    try {
+      // 初期URL
+      const savedInitialUrl = localStorage.getItem(STORAGE_KEYS.INITIAL_URL);
+      if (savedInitialUrl) setInitialUrl(savedInitialUrl);
+
+      // クローリングデータ
+      const savedCrawledData = localStorage.getItem(STORAGE_KEYS.CRAWLED_DATA);
+      if (savedCrawledData) setCrawledData(JSON.parse(savedCrawledData));
+
+      // 抽出されたURL
+      const savedExtractedUrls = localStorage.getItem(
+        STORAGE_KEYS.EXTRACTED_URLS
+      );
+      if (savedExtractedUrls) setExtractedUrls(JSON.parse(savedExtractedUrls));
+
+      // クローリング状態
+      const savedIsCrawling = localStorage.getItem(STORAGE_KEYS.IS_CRAWLING);
+      if (savedIsCrawling) setIsCrawling(JSON.parse(savedIsCrawling));
+
+      // リトライ状態
+      const savedIsRetrying = localStorage.getItem(STORAGE_KEYS.IS_RETRYING);
+      if (savedIsRetrying) setIsRetrying(JSON.parse(savedIsRetrying));
+
+      // 進捗
+      const savedProgress = localStorage.getItem(STORAGE_KEYS.PROGRESS);
+      if (savedProgress) setProgress(JSON.parse(savedProgress));
+
+      // 結果一覧から選択されたURLがあれば読み込む
+      const selectedUrlsForCrawling = localStorage.getItem(
+        "selectedUrlsForCrawling"
+      );
+      if (selectedUrlsForCrawling) {
+        const urls = JSON.parse(selectedUrlsForCrawling) as ExtractedUrl[];
+        setExtractedUrls(urls);
+        localStorage.removeItem("selectedUrlsForCrawling");
+      }
+    } catch (error) {
+      console.error("ローカルストレージからの読み込みエラー:", error);
+    }
+  }, []);
+
+  // 状態が変更されたらローカルストレージに保存
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.INITIAL_URL, initialUrl);
+      localStorage.setItem(
+        STORAGE_KEYS.CRAWLED_DATA,
+        JSON.stringify(crawledData)
+      );
+      localStorage.setItem(
+        STORAGE_KEYS.EXTRACTED_URLS,
+        JSON.stringify(extractedUrls)
+      );
+      localStorage.setItem(
+        STORAGE_KEYS.IS_CRAWLING,
+        JSON.stringify(isCrawling)
+      );
+      localStorage.setItem(
+        STORAGE_KEYS.IS_RETRYING,
+        JSON.stringify(isRetrying)
+      );
+      localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+    } catch (error) {
+      console.error("ローカルストレージへの保存エラー:", error);
+    }
+  }, [
+    initialUrl,
+    crawledData,
+    extractedUrls,
+    isCrawling,
+    isRetrying,
+    progress,
+  ]);
 
   // デバッグ用：抽出されたURLの数を監視
   useEffect(() => {
@@ -85,7 +208,7 @@ export function useCrawler() {
         console.log(`Content length: ${content.length} characters`);
         return content;
       } catch (error) {
-        console.error(`Fetch error (retry ${retryCount + 1}/5):`, error);
+        console.error(`Fetch error (retry ${retryCount}/5):`, error);
         if (retryCount < 5) {
           // リトライ間隔を設ける（5秒）
           await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -130,7 +253,7 @@ export function useCrawler() {
         }
       }
 
-      // console.log(`${sourceUrl}からフィルタリング後の有効なURL:`, newValidUrls)
+      // console.log(`${sourceUrl}からフィルタリング後の有効なURL:`, newValidUrls);
 
       // 既存のリストに新しいURLを追加（重複を除外）
       setExtractedUrls((prev) => {
@@ -290,9 +413,9 @@ export function useCrawler() {
       let completedCount = 0;
       const totalUrls = urls.length;
 
-      // URLを最大MAX_CONCURRENT_REQUESTSずつのバッチに分割
-      for (let i = 0; i < urls.length; i += MAX_CONCURRENT_REQUESTS) {
-        const batch = urls.slice(i, i + MAX_CONCURRENT_REQUESTS);
+      // URLを最大maxConcurrentRequestsずつのバッチに分割
+      for (let i = 0; i < urls.length; i += maxConcurrentRequests) {
+        const batch = urls.slice(i, i + maxConcurrentRequests);
 
         // バッチ内のURLを並列に処理
         const results = await Promise.allSettled(
@@ -304,7 +427,7 @@ export function useCrawler() {
         onProgress(completedCount, totalUrls);
       }
     },
-    [processUrl]
+    [processUrl, maxConcurrentRequests]
   );
 
   // 選択されたURLをクローリングする関数（並列処理版）
@@ -539,6 +662,29 @@ export function useCrawler() {
     setExtractedUrls((prev) => prev.map((item) => ({ ...item, selected })));
   }, []);
 
+  // クローリング情報を破棄する関数
+  const resetCrawlingData = useCallback(() => {
+    // ローカルストレージからクローリング関連のデータを削除
+    Object.values(STORAGE_KEYS).forEach((key) => {
+      localStorage.removeItem(key);
+    });
+
+    // 状態をリセット
+    setInitialUrl("");
+    setCrawledData([]);
+    setExtractedUrls([]);
+    setIsLoading(false);
+    setError(null);
+    setIsCrawling(false);
+    setProgress(0);
+    setIsRetrying(false);
+
+    toast({
+      title: "クローリング情報をリセットしました",
+      description: "すべてのクローリング進行状況がリセットされました",
+    });
+  }, [toast]);
+
   // 統計情報を計算
   const stats = {
     total: crawledData.length,
@@ -553,7 +699,7 @@ export function useCrawler() {
     setInitialUrl,
     crawledData,
     extractedUrls,
-    setExtractedUrls, // この行を追加
+    setExtractedUrls,
     isLoading,
     error,
     isCrawling,
@@ -568,5 +714,8 @@ export function useCrawler() {
     downloadCrawledData,
     toggleUrlSelection,
     toggleAllUrls,
+    resetCrawlingData,
+    maxConcurrentRequests,
+    setMaxConcurrentRequests,
   };
 }

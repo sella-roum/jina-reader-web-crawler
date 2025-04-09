@@ -33,7 +33,7 @@ export function UrlSelectorList({
   const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState<"all" | "selected" | "unselected">("all")
 
-  // 抽出されたURLがない場合でも、コンポーネントを表示（ただし「URLが見つかりません」というメッセージを表示）
+  // 抽出されたURLがない場合でも、コンポーネントを表示（ただし「URLが見つかりません」というメッセ��ジを表示）
   const hasUrls = extractedUrls.length > 0
   const selectedCount = extractedUrls.filter((url) => url.selected).length
   const unselectedCount = extractedUrls.length - selectedCount
