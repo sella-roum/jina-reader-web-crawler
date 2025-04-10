@@ -44,14 +44,14 @@ export default function ResultsPage() {
             <ResultsList />
           </motion.div>
 
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
             className="text-center text-gray-500 text-sm mt-8"
           >
             <p>© {new Date().getFullYear()} Jina AI Reader Webクローラー</p>
-          </motion.div>
+          </motion.div> */}
         </div>
       </main>
       <Toaster />
