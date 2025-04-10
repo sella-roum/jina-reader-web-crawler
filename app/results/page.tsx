@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { ResultsList } from "@/components/results-list"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button";
+import { ResultsList } from "@/components/results-list";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function ResultsPage() {
   return (
@@ -56,5 +56,5 @@ export default function ResultsPage() {
       </main>
       <Toaster />
     </ThemeProvider>
-  )
+  );
 }

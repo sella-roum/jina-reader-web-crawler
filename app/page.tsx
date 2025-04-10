@@ -126,7 +126,7 @@ export default function Home() {
           </motion.div>
 
           {/* 最初のページが取得済みの場合は、URL選択リストを表示 */}
-          {hasInitialPage && (
+          {/* {hasInitialPage && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -141,9 +141,23 @@ export default function Home() {
                 isCrawling={isCrawling}
               />
             </motion.div>
-          )}
+          )} */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <UrlSelectorList
+              extractedUrls={extractedUrls}
+              setExtractedUrls={setExtractedUrls}
+              toggleUrlSelection={toggleUrlSelection}
+              toggleAllUrls={toggleAllUrls}
+              crawlSelectedUrls={crawlSelectedUrls}
+              isCrawling={isCrawling}
+            />
+          </motion.div>
 
-          {crawledData.length > 0 && (
+          {/* {crawledData.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -163,7 +177,26 @@ export default function Home() {
                 setMaxConcurrentRequests={setMaxConcurrentRequests}
               />
             </motion.div>
-          )}
+          )} */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <CrawlingProgress
+              crawledData={crawledData}
+              progress={progress}
+              isCrawling={isCrawling}
+              isRetrying={isRetrying}
+              downloadFormat={downloadFormat}
+              setDownloadFormat={setDownloadFormat}
+              downloadCrawledData={downloadCrawledData}
+              retryFailedUrls={retryFailedUrls}
+              stats={stats}
+              maxConcurrentRequests={maxConcurrentRequests}
+              setMaxConcurrentRequests={setMaxConcurrentRequests}
+            />
+          </motion.div>
 
           {/* <motion.div
             initial={{ opacity: 0 }}
