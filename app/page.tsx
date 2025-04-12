@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Database, RefreshCcw } from "lucide-react";
 import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   AlertDialog,
@@ -48,8 +49,8 @@ export default function Home() {
     setMaxConcurrentRequests,
   } = useCrawler();
 
-  // 最初のページが取得済みかどうか
-  const hasInitialPage = crawledData.length > 0;
+  // // 最初のページが取得済みかどうか
+  // const hasInitialPage = crawledData.length > 0;
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="crawler-theme">
@@ -71,12 +72,21 @@ export default function Home() {
           </motion.div>
 
           <div className="flex flex-wrap justify-between gap-2 mb-4">
-            <Link href="/results">
-              <Button variant="outline" className="gap-1">
-                <Database className="h-4 w-4" />
-                クローリング結果一覧
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/results">
+                <Button variant="outline" className="gap-1">
+                  <Database className="h-4 w-4" />
+                  クローリング結果一覧
+                </Button>
+              </Link>
+              {/* 操作説明へのリンクを追加 */}
+              <Link href="/manual">
+                <Button variant="outline" className="gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  操作説明
+                </Button>
+              </Link>
+            </div>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
